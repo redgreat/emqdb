@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/_build/default/lib/emqtt" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/_build/default/lib/epgsql" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/_build/default/lib/jamdb_oracle" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/_build/default/lib/lager" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/_build/default/lib/poolboy" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/_build/default/lib/ranch" vcs="Git" />
+  </component>
+</project>
