@@ -4,8 +4,8 @@ WORKDIR /emqdbuild
 
 COPY . .
 
-RUN echo "deb http://mirrors.aliyun.com/debian/ bookworm main non-free contrib" > /etc/apt/sources.list \
-    && echo "deb http://mirrors.aliyun.com/debian-security/ bookworm-security main" >> /etc/apt/sources.list
+# RUN echo "deb http://mirrors.aliyun.com/debian/ bookworm main non-free contrib" > /etc/apt/sources.list \
+#    && echo "deb http://mirrors.aliyun.com/debian-security/ bookworm-security main" >> /etc/apt/sources.list
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -40,9 +40,6 @@ COPY --from=builder /emqdbuild/_build/prod/rel/emqdb /opt/emqdb/
 COPY --from=builder /emqdbuild/docker/docker-entrypoint.sh /opt/emqdb/docker/docker-entrypoint.sh
 
 RUN chmod +x /opt/emqdb/docker/docker-entrypoint.sh
-RUN git config --global http.sslVerify false \
-    && git config --global http.postBuffer 1048576000 \
-    && git config --global --add url."https://github.com/".insteadOf git@github.com:
 
 VOLUME /opt/emqdb
 
