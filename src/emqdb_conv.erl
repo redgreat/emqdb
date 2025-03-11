@@ -35,11 +35,11 @@
 bin(Bin) when is_binary(Bin) -> Bin;
 bin(Num) when is_number(Num) -> number_to_binary(Num);
 bin(Atom) when is_atom(Atom) -> atom_to_binary(Atom, utf8);
-bin(Map) when is_map(Map) -> emqx_utils_json:encode(Map);
+bin(Map) when is_map(Map) -> json:encode(Map);
 bin(List) when is_list(List) ->
     case io_lib:printable_list(List) of
         true -> unicode:characters_to_binary(List);
-        false -> emqx_utils_json:encode(List)
+        false -> json:encode(List)
     end;
 bin(Data) ->
     error({invalid_bin, Data}).
@@ -49,11 +49,11 @@ bin(Data) ->
 str(Bin) when is_binary(Bin) -> binary_to_list(Bin);
 str(Num) when is_number(Num) -> number_to_list(Num);
 str(Atom) when is_atom(Atom) -> atom_to_list(Atom);
-str(Map) when is_map(Map) -> binary_to_list(emqx_utils_json:encode(Map));
+str(Map) when is_map(Map) -> binary_to_list(json:encode(Map));
 str(List) when is_list(List) ->
     case io_lib:printable_list(List) of
         true -> List;
-        false -> binary_to_list(emqx_utils_json:encode(List))
+        false -> binary_to_list(json:encode(List))
     end;
 str(Data) ->
     error({invalid_str, Data}).
@@ -127,3 +127,7 @@ float(Num) when is_number(Num) ->
     erlang:float(Num);
 float(Data) ->
     error(badarg, [Data]).
+
+%%====================================================================
+%% 内部函数
+%%====================================================================

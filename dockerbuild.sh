@@ -21,7 +21,7 @@ docker rmi emqdb
 docker build -t emqdb .
 
 # 运行
-docker run -itd --name emqdb -p 8080:8090 emqdb
+docker run -itd --name emqdb -p 8081:8091 emqdb
 
 # 查看日志
 docker logs -n 100 emqdb

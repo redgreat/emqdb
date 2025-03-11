@@ -4,8 +4,8 @@ WORKDIR /emqdbuild
 
 COPY . .
 
-# RUN echo "deb http://mirrors.aliyun.com/debian/ bookworm main non-free contrib" > /etc/apt/sources.list \
-#    && echo "deb http://mirrors.aliyun.com/debian-security/ bookworm-security main" >> /etc/apt/sources.list
+RUN echo "deb http://mirrors.aliyun.com/debian/ bookworm main non-free contrib" > /etc/apt/sources.list \
+   && echo "deb http://mirrors.aliyun.com/debian-security/ bookworm-security main" >> /etc/apt/sources.list
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev
 RUN rebar3 as prod release
 
-FROM --platform=$BUILDPLATFORM alpine:3.21
+FROM --platform=$BUILDPLATFORM debian:bookworm-slim
 
 ARG DOCKER_IMAGE_VERSION
 
@@ -28,13 +28,18 @@ ENV \
 
 WORKDIR /opt/emqdb
 
-RUN apk add --no-cache --update \
-    ncurses-libs \
-    libgcc \
-    libstdc++ \
+RUN echo "deb http://mirrors.aliyun.com/debian/ bookworm main non-free contrib" > /etc/apt/sources.list \
+   && echo "deb http://mirrors.aliyun.com/debian-security/ bookworm-security main" >> /etc/apt/sources.list
+
+RUN apt-get update && apt-get install -y \
+    libncurses6 \
+    libgcc-s1 \
+    libstdc++6 \
     dumb-init \
     tzdata \
-    && apk add --no-cache --repository https://dl-cdn.alpinelinux.org/alpine/edge/testing/ gosu
+    gosu \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /emqdbuild/_build/prod/rel/emqdb /opt/emqdb/
 COPY --from=builder /emqdbuild/docker/docker-entrypoint.sh /opt/emqdb/docker/docker-entrypoint.sh
