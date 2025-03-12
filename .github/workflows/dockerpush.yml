@@ -121,6 +121,8 @@ jobs:
 
       - name: compile
         run: |
+          mkdir -p /home/runner/work/emqdb/emqdb/_build
+          ln -s $PWD/_build /home/runner/work/emqdb/emqdb/_build || true
           rebar3 clean
           rebar3 as prod release
           tar -czvf emqdb-${{ steps.prep.outputs.label_version }}.tar.gz _build/prod/rel/emqdb
@@ -187,6 +189,8 @@ jobs:
           tags: ${{ steps.prep.outputs.tags }}
           build-args: |
               DOCKER_IMAGE_VERSION=${{ steps.prep.outputs.label_version }}
+          no-cache: true
+          file: ./Dockerfile
           cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
           cache-to: type=gha,mode=max,scope=${{ env.DOCKER_IMAGE_NAME }}
 
