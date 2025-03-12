@@ -19,7 +19,7 @@ if ! getent group "$GROUPNAME"; then
 fi
 
 if ! id "$USERNAME" &>/dev/null; then
-    useradd -u "$USERS_ID" -g "$GROUP_ID" -m -s /bin/bash "$USERNAME"
+    useradd -u "$USER_ID" -g "$GROUP_ID" -m -s /bin/bash "$USERNAME"
 fi
 
 # 创建文件夹

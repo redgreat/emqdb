@@ -4,14 +4,10 @@ WORKDIR /emqdbuild
 
 COPY . .
 
-RUN echo "deb http://mirrors.aliyun.com/debian/ bookworm main non-free contrib" > /etc/apt/sources.list \
-   && echo "deb http://mirrors.aliyun.com/debian-security/ bookworm-security main" >> /etc/apt/sources.list
-
 RUN apt-get update && apt-get install -y \
     build-essential \
     git \
     curl \
-    bash \
     cmake \
     libssl-dev \
     zlib1g-dev
@@ -28,13 +24,11 @@ ENV \
 
 WORKDIR /opt/emqdb
 
-RUN echo "deb http://mirrors.aliyun.com/debian/ bookworm main non-free contrib" > /etc/apt/sources.list \
-   && echo "deb http://mirrors.aliyun.com/debian-security/ bookworm-security main" >> /etc/apt/sources.list
-
 RUN apt-get update && apt-get install -y \
     libncurses6 \
     libgcc-s1 \
     libstdc++6 \
+    openssl \
     dumb-init \
     tzdata \
     gosu \
