@@ -37,8 +37,8 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /emqdbuild/_build/prod/rel/emqdb /opt/emqdb/
-COPY --from=builder /emqdbuild/docker/docker-entrypoint.sh /opt/emqdb/docker/docker-entrypoint.sh
+COPY --from=builder /home/runner/work/emqdb/emqdb/_build/prod/rel/emqdb /opt/emqdb/
+COPY --from=builder /home/runner/work/emqdb/emqdb/docker/docker-entrypoint.sh /opt/emqdb/docker/docker-entrypoint.sh
 
 RUN chmod +x /opt/emqdb/docker/docker-entrypoint.sh
 
