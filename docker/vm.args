@@ -1,5 +1,5 @@
--sname emqpg@localhost
--setcookie emqpg_cookie
+-sname emqdb@localhost
+-setcookie emqdb_cookie
 -smp auto
 -megabytes 64
 -env ERL_MAX_PORTS 64
@@ -11,3 +11,5 @@
 +A 1
 +C multi_time_warp
 +sbwt none
+
+-mnesia dir '"/var/eadm_db"'
