@@ -121,8 +121,10 @@ jobs:
 
       - name: compile
         run: |
-          mkdir -p /home/runner/work/emqdb/emqdb/_build
-          ln -s $PWD/_build /home/runner/work/emqdb/emqdb/_build || true
+          rm -rf _build
+          mkdir -p /home/runner/work/emqdb/emqdb
+          ln -s $PWD /home/runner/work/emqdb/emqdb || true
+          # 编译
           rebar3 clean
           rebar3 as prod release
           tar -czvf emqdb-${{ steps.prep.outputs.label_version }}.tar.gz _build/prod/rel/emqdb

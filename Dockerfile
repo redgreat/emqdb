@@ -1,6 +1,7 @@
 FROM --platform=$BUILDPLATFORM erlang:latest AS builder
 
-WORKDIR /emqdbuild
+# 设置与GitHub Actions相同的构建路径
+WORKDIR /home/runner/work/emqdb/emqdb
 
 COPY . .
 
@@ -11,7 +12,8 @@ RUN apt-get update && apt-get install -y \
     cmake \
     libssl-dev \
     zlib1g-dev
-RUN rebar3 as prod release
+RUN rm -rf _build && \
+    rebar3 as prod release
 
 FROM --platform=$BUILDPLATFORM debian:bookworm-slim
 
