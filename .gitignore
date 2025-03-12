@@ -17,5 +17,5 @@ _build/
 _checkouts/
 
 # proj
-config/
+config/sys.config
 logs/
