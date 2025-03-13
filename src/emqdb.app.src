@@ -12,7 +12,8 @@
     ranch,
     emqtt,
     epgsql,
-    poolboy
+    poolboy,
+    jamdb_oracle
   ]},
   {env,[]},
   {modules, []},

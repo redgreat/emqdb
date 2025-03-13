@@ -1,19 +1,4 @@
-version: '3.8'
 services:
-    postgres:
-        image: 'redgreat/postgres:latest'
-        container_name: pg
-        hostname: postgres
-        restart: unless-stopped
-        environment:
-            POSTGRES_USER: user_emqdb
-            POSTGRES_DB: emqdb
-            POSTGRES_PASSWORD: iyS62bvt
-            POSTGRES_HOST_AUTH_METHOD: trust
-        volumes:
-            - pgdata:/var/lib/postgresql/data
-        ports:
-            - '5432:5432'
     emqdb:
         image: 'redgreat/emqdb:latest'
         container_name: emqdb
@@ -21,13 +6,11 @@ services:
         ports:
             - '8081:8091'
         volumes:
-            - ./docker/sys.config:/opt/emqdb/config/sys.config
-            - ./docker/vm.args:/opt/emqdb/config/vm.args
-            - ./logs/:/opt/emqdb/log/:rw
+            - ./config/sys.config:/opt/emqdb/config/sys.config
+            - ./config/vm.args:/opt/emqdb/config/vm.args
+            - ./log/:/opt/emqdb/log/:rw
         environment:
             DISABLE_IPV6: 'true'
-        depends_on:
-            - postgres
         deploy:
             resources:
                 limits:
@@ -36,22 +19,3 @@ services:
                     memory: 500M
         mem_swappiness: 0
         oom_kill_disable: true
-    npm:
-        image: 'redgreat/nginxpm:latest'
-        container_name: npm
-        restart: unless-stopped
-
-        ports:
-            - '80:8080'
-            - '8181:8181'
-            - '443:4443'
-        volumes:
-            - ./npmdata:/config:rw
-        depends_on:
-            - emqdb
-        environment:
-            DISABLE_IPV6: 'true'
-            TZ: 'Asia/Shanghai'
-            LANG: 'zh_CN.UTF-8'
-volumes:
-    pgdata:
