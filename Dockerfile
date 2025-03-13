@@ -52,6 +52,7 @@ LABEL \
     org.label-schema.version="${DOCKER_IMAGE_VERSION:-unknown}" \
     org.label-schema.vcs-url="https://github.com/redgreat/emqdb" \
     org.label-schema.maintainer="wangcw <rubygreat@msn.com>" \
-    org.label-schema.schema-version="1.0"
+    org.label-schema.schema-version="1.0" \
+    org.opencontainers.image.source="https://github.com/redgreat/emqdb"
 
 ENTRYPOINT ["/usr/bin/dumb-init", "-c", "--", "/opt/emqdb/docker/docker-entrypoint.sh"]
