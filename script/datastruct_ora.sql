@@ -1,7 +1,7 @@
--- Active: 1741151489311@@fn.wongcw.cn@1521@orclpdb@WANGCW
+-- Active: 1740732360630@@fn.wongcw.cn@1521
 -- 设置时区
 ALTER SESSION SET TIME_ZONE = 'Asia/Shanghai';
-
+ALTER SESSION SET TIME_ZONE = '+8:00';
 -- 业务数据_合宙设备定位信息
 BEGIN
   EXECUTE IMMEDIATE 'DROP TABLE lc_hzgnss CASCADE CONSTRAINTS';
@@ -37,3 +37,54 @@ COMMENT ON COLUMN lc_hzgnss.speed IS '速度';
 COMMENT ON COLUMN lc_hzgnss.satellite IS '卫星信号';
 COMMENT ON COLUMN lc_hzgnss.inserttime IS '创建时间';
 COMMENT ON TABLE lc_hzgnss IS '业务数据_合宙设备定位信息';
+
+-- 业务数据_银尔达设备定位信息
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE lc_yedgnss CASCADE CONSTRAINTS';
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE != -942 THEN
+            RAISE;
+        END IF;
+END;
+/
+
+-- 创建表 业务数据_银尔达设备定位信息
+CREATE TABLE lc_yedgnss (
+    gtime TIMESTAMP NOT NULL,
+    imei VARCHAR2(50),
+    acc NUMBER(5),
+    csq NUMBER(5),
+    volt NUMBER(4, 2),
+    gpslat NUMBER(10, 7),
+    gpslng NUMBER(10, 7),
+    lbslat NUMBER(10, 7),
+    lbslng NUMBER(10, 7),
+    height NUMBER(10),
+    direction NUMBER(10),
+    speed NUMBER(10),
+    satellite NUMBER(10),
+    inserttime TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- 添加主键约束
+ALTER TABLE lc_yedgnss ADD CONSTRAINT pk_yedgnss_gtime PRIMARY KEY (gtime);
+
+-- 添加字段注释
+COMMENT ON COLUMN lc_yedgnss.gtime IS '采集时间';
+COMMENT ON COLUMN lc_yedgnss.imei IS '设备imei';
+COMMENT ON COLUMN lc_yedgnss.csq IS '4G信号';
+COMMENT ON COLUMN lc_yedgnss.acc IS '设备ACC状态(0关闭1开启)';
+COMMENT ON COLUMN lc_yedgnss.volt IS '设备模块电压(单位mV)';
+COMMENT ON COLUMN lc_yedgnss.gpslat IS 'gps定位纬度(gcj02)';
+COMMENT ON COLUMN lc_yedgnss.gpslng IS 'gps定位经度(gcj02)';
+COMMENT ON COLUMN lc_yedgnss.lbslat IS 'lbs定位纬度(gcj02)';
+COMMENT ON COLUMN lc_yedgnss.lbslng IS 'lbs定位经度(gcj02)';
+COMMENT ON COLUMN lc_yedgnss.height IS '海拔';
+COMMENT ON COLUMN lc_yedgnss.direction IS '方向角';
+COMMENT ON COLUMN lc_yedgnss.speed IS '速度';
+COMMENT ON COLUMN lc_yedgnss.satellite IS '卫星信号';
+COMMENT ON COLUMN lc_yedgnss.inserttime IS '创建时间';
+
+-- 添加表注释
+COMMENT ON TABLE lc_yedgnss IS '业务数据_银尔达设备定位信息';

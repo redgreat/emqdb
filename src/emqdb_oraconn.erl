@@ -56,7 +56,8 @@ init([]) ->
 
       {ok, ConnRef} = jamdb_oracle:start(ConnOpts),
       lager:info("~p Connected to ~s at ~s with user ~s: ~p~n", [?MODULE, ServiceName, Host, Username, ConnRef]),
-      case jamdb_oracle:sql_query(ConnRef, "ALTER SESSION SET NLS_TIMESTAMP_TZ_FORMAT = 'YYYY-MM-DD HH24:MI:SS TZH:TZM'") of
+      case jamdb_oracle:sql_query(ConnRef, "ALTER SESSION SET TIME_ZONE = '+08:00' 
+        NLS_TIMESTAMP_TZ_FORMAT = 'YYYY-MM-DD HH24:MI:SS TZR' NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS'") of
         {ok, _} ->
           lager:debug("Session time format set successfully");
         {error, Reason} ->

@@ -19,6 +19,8 @@
 -export([bool/1]).
 -export([int/1]).
 -export([float/1]).
+-export([timestamp/1]).
+-export([local_to_utc/2]).
 
 -compile({no_auto_import, [float/1]}).
 
@@ -127,6 +129,23 @@ float(Num) when is_number(Num) ->
     erlang:float(Num);
 float(Data) ->
     error(badarg, [Data]).
+
+%% @doc
+%% TimeStamp格式转换为Oracle数据库时间格式
+%% @end
+timestamp({{Year, Month, Day}, {Hour, Minute, Second}}) ->
+    lists:flatten(io_lib:format("~4..0B-~2..0B-~2..0B ~2..0B:~2..0B:~2..0B", [Year, Month, Day, Hour, Minute, Second]));
+timestamp({{Year, Month, Day}, {Hour, Minute, Second, Microsecond}}) ->
+    lists:flatten(io_lib:format("~4..0B-~2..0B-~2..0B ~2..0B:~2..0B:~2..0B.~6..0B", [Year, Month, Day, Hour, Minute, Second, Microsecond])).
+
+%% @doc
+%% 本地时间转换为UTC时间
+%% @end
+local_to_utc({Date, Time}, Offset) ->
+    LocalTimeInSeconds = calendar:datetime_to_gregorian_seconds({Date, Time}) - 
+                         calendar:datetime_to_gregorian_seconds({{1970,1,1}, {0,0,0}}),
+    UtcTimeInSeconds = LocalTimeInSeconds - Offset,
+    calendar:gregorian_seconds_to_datetime(UtcTimeInSeconds + calendar:datetime_to_gregorian_seconds({{1970,1,1}, {0,0,0}})).
 
 %%====================================================================
 %% 内部函数

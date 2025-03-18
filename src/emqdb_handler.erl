@@ -26,13 +26,6 @@
 %%%===================================================================
 % -include_lib("emqtt/include/emqtt.hrl").
 
-
-%%%===================================================================
-%%% 宏定义
-%%%===================================================================
-%%% GNSS设备imei
--define(GNSS_IMEI, <<"860678076874157">>).
-
 %%%===================================================================
 %%% API 函数
 %%%===================================================================
@@ -91,12 +84,10 @@ handle_cast(_Msg, State) ->
 
 handle_info({publish, #{payload := Payload, topic := Topic}}, State) ->
   case Topic of
-    <<"pos/gnss">> ->
-      handle_gnss_data(Payload, State);
-    <<"pos/gnss/lbs">> ->
-      handle_lbs_data(Payload, State);
+    <<"pos/gnss/", Imei/binary>> ->
+      handle_gnss_data(Payload, Imei, State);
     <<"pos/780eg/", Imei/binary>> ->
-      handle_780eg_data(Payload, Imei, State);
+      handle_gnss_data(Payload, Imei, State);
     _ ->
       lager:warning("Received message on unknown topic: ~p", [Topic]),
       {noreply, State}
@@ -105,89 +96,60 @@ handle_info({publish, #{payload := Payload, topic := Topic}}, State) ->
 handle_info(_Info, State) ->
   {noreply, State}.
 
-handle_gnss_data(Payload, State) ->
-  case parse_gnss_message(Payload) of
-    {Lng, Lat} ->
-      emqdb_db:db_ora_gnss(?GNSS_IMEI, {Lng, Lat}),
-      emqdb_db:db_pg_gnss(?GNSS_IMEI, {Lng, Lat}),
-      {noreply, State};
-    {error, Reason} ->
-      lager:error("Failed to parse message: ~p~n", [Reason]),
-      {noreply, State}
-  end.
+handle_gnss_data(Payload, Imei, State) ->
+  try
+    JsonData = json:decode(Payload),
+    TimeStamp = maps:get(<<"timestamp">>, JsonData),
+    DateTime = calendar:system_time_to_universal_time(TimeStamp, second),
+    Acc = maps:get(<<"acc">>, JsonData, 0),
+    Csq = maps:get(<<"csq">>, JsonData, 0),
+    Volt = maps:get(<<"volt">>, JsonData, 0),
 
-handle_lbs_data(Payload, State) ->
-  case parse_gnss_message(Payload) of
-    {Lng, Lat} ->
-      emqdb_db:db_ora_gnss(?GNSS_IMEI, {Lng, Lat}),
-      emqdb_db:db_pg_lbs(?GNSS_IMEI, {Lng, Lat}),
-      {noreply, State};
-    {error, Reason} ->
-      lager:error("Failed to parse message: ~p~n", [Reason]),
-      {noreply, State}
-  end.
-
-handle_780eg_data(Payload, Imei, State) ->
-  Messages = string:split(Payload, "_", all),
-  lists:foreach(fun(Message) ->
-    try
-      BinaryMessage = case is_binary(Message) of
-        true -> Message;
-        false -> list_to_binary(Message)
+    Gps = maps:get(<<"gps">>, JsonData, #{}),
+    {GpsLng, GpsLat} = 
+      case {maps:get(<<"lng">>, Gps, undefined), maps:get(<<"lat">>, Gps, undefined)} of
+        {undefined, _} -> 
+          {undefined, undefined};
+        {_, undefined} -> 
+          {undefined, undefined};
+        {LngBin, LatBin} -> 
+          {binary_to_float(LngBin), binary_to_float(LatBin)}
       end,
-      DecodedMsg = json:decode(BinaryMessage),
-        case maps:get(<<"msg">>, DecodedMsg, undefined) of
-          undefined ->
-            lager:error("No msg field in message: ~p~n", [DecodedMsg]);
-          Msg ->
-            [Result, HardwareTimestamp, LngStr, LatStr, Height, Direction, Speed, Satellite] = Msg,
-            case Result of
-              true ->
-                lager:warning("Gps status not fixed!");
-              false ->
-                WsgLng = list_to_float(LngStr),
-                WsgLat = list_to_float(LatStr),
-                {Lng, Lat} = emqdb_geo:wgs84_to_gcj02({WsgLng, WsgLat}),
-                CurrentTimestamp = erlang:system_time(second),
-                LastLocation = maps:get(last_location, State, undefined),
-                LastTimestamp = maps:get(last_timestamp, State, undefined),
 
-                {NewState, MovementInfo} = calculate_movement({Lng, Lat}, CurrentTimestamp, LastLocation, LastTimestamp, State),
+    Spd = maps:get(<<"spd">>, Gps, 0),
+    Alt = maps:get(<<"alt">>, Gps, 0),
+    Dir = maps:get(<<"dir">>, Gps, 0),
+    Sats = maps:get(<<"sats">>, Gps, 0),
 
-                case MovementInfo of
-                  {Distance, Speed} ->
-                    if 
-                      Speed > 60 ->
-                        CurrentTime = erlang:system_time(second),
-                        LastAlertTime = maps:get(last_alert_time, State, 0),
-                        if
-                          CurrentTime - LastAlertTime > 300 ->
-                            emqdb_push:send_msg(unicode:characters_to_binary(io_lib:format("开车超速啦，当前速度：~p km/h", [Speed]), utf8)),
-                            NewAlertTime = CurrentTime;
-                          true ->
-                            NewAlertTime = LastAlertTime
-                        end,
-                        {noreply, State#{last_alert_time => NewAlertTime}};
-                      true -> ok
-                    end,
-                    if
-                      Distance > 10 ->
-                        InsertTime = timestamp_to_pg_datetime(HardwareTimestamp),
-                        emqdb_db:db_pg_780eg(Imei, Lng, Lat, Height, Direction, Speed, Satellite, InsertTime);
-                      true -> ok
-                    end
-                end,
-                {noreply, NewState};
-              _ ->
-                lager:warning("no result!")
-            end
-        end
-    catch
-      error:Error ->
-        lager:error("Failed to decode message: ~p, Error: ~p~n", [Message, Error])
-    end
-  end, Messages),
-  {noreply, State}.
+    Lbs = maps:get(<<"lbs">>, JsonData, #{}),
+    {LbsLng, LbsLat} = 
+      case {maps:get(<<"lng">>, Lbs, undefined), maps:get(<<"lat">>, Lbs, undefined)} of
+        {undefined, _} -> 
+          {undefined, undefined};
+        {_, undefined} -> 
+          {undefined, undefined};
+        {Lng, Lat} -> 
+          {binary_to_float(Lng), binary_to_float(Lat)}
+      end,
+
+    % io:format("DateTime: ~p~n", [DateTime]),
+    % io:format("DateBinary: ~p~n", [DateBinary]),
+    % io:format("Acc: ~p~n", [Acc]),
+    % io:format("Csq: ~p~n", [Csq]),
+    % io:format("Volt: ~p~n", [Volt]),
+    % io:format("GpsLng: ~p, GpsLat: ~p~n", [GpsLng, GpsLat]),
+    % io:format("Spd: ~p, Alt: ~p, Dir: ~p, Sats: ~p~n", [Spd, Alt, Dir, Sats]),
+    % io:format("LbsLng: ~p, LbsLat: ~p~n", [LbsLng, LbsLat]),
+
+    emqdb_db:db_pg_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
+    emqdb_db:db_ora_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
+
+    {noreply, State}
+  catch
+    _:Error ->
+      lager:error("Failed to parse message: ~p~n", [Error]),
+      {noreply, State}
+  end.
 
 terminate(_Reason, State) ->
   lager:info("Handler terminating."),
@@ -203,49 +165,45 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% 内部函数
 %%%===================================================================
+%% @doc
+%% 接收经纬度数据
+%% @end
+% parse_gnss_message(<<>>) ->
+%  {error, empty_message};
+% parse_gnss_message(Binary) when is_binary(Binary) ->
+%  case binary_to_list(Binary) of
+%    [] -> {error, empty_message};
+%    Str -> parse_gnss_string(Str)
+%  end;
+% parse_gnss_message(_) ->
+%  {error, invalid_format}.
 
-parse_gnss_message(<<>>) ->
-  {error, empty_message};
-parse_gnss_message(Binary) when is_binary(Binary) ->
-  case binary_to_list(Binary) of
-    [] -> {error, empty_message};
-    Str -> parse_gnss_string(Str)
-  end;
-parse_gnss_message(_) ->
-  {error, invalid_format}.
-
+%% @doc
 %% 解析经纬度字符串（格式："经度_纬度"）
-parse_gnss_string(Str) ->
-  try
-    case string:split(Str, "_") of
-      [LngStr, LatStr] ->
-        Lng = list_to_float(LngStr),
-        Lat = list_to_float(LatStr),
-        % emqdb_geo:wgs84_to_gcj02({Lng, Lat});
-        {Lng, Lat};
-      _ ->
-        lager:info("Payload Data Error!")
-    end
-  catch
-    error:_ -> {error, invalid_coordinate_format}
-  end.
+%% @end
+% parse_gnss_string(Str) ->
+%  try
+%    case string:split(Str, "_") of
+%      [LngStr, LatStr] ->
+%        Lng = list_to_float(LngStr),
+%        Lat = list_to_float(LatStr),
+%        % emqdb_geo:wgs84_to_gcj02({Lng, Lat});
+%        {Lng, Lat};
+%      _ ->
+%        lager:info("Payload Data Error!")
+%    end
+%  catch
+%    error:_ -> {error, invalid_coordinate_format}
+%  end.
 
-%% 计算移动信息（距离和速度）
-calculate_movement(CurrentLocation, CurrentTimestamp, undefined, _, State) ->
-  NewState = State#{last_location => CurrentLocation, last_timestamp => CurrentTimestamp},
-  {NewState, {0, 0}};
 
-calculate_movement(CurrentLocation, CurrentTimestamp, LastLocation, LastTimestamp, State) ->
-  Distance = emqdb_geo:distance(LastLocation, CurrentLocation),
-  SpeedMps = emqdb_geo:speed(LastLocation, LastTimestamp, CurrentLocation, CurrentTimestamp),
-  Speed = SpeedMps * 3.6,
-  NewState = State#{last_location => CurrentLocation, last_timestamp => CurrentTimestamp},
-  {NewState, {Distance, Speed}}.
-
-timestamp_to_pg_datetime(Timestamp) when is_integer(Timestamp) ->
+%% @doc
+%% 时间格式转换（时间戳 --> 年-月-日：时:分:秒）
+%% @end
+timestamp_to_binary(Timestamp) when is_integer(Timestamp) ->
   DateTime = calendar:system_time_to_universal_time(Timestamp, second),
-  format_datetime_for_pg(DateTime).
+  datetime_to_binary(DateTime).
 
-format_datetime_for_pg({{Year, Month, Day}, {Hour, Minute, Second}}) ->
-  lists:flatten(io_lib:format("~4..0B-~2..0B-~2..0B ~2..0B:~2..0B:~2..0B", 
-                             [Year, Month, Day, Hour, Minute, Second])).
+datetime_to_binary({{Year, Month, Day}, {Hour, Minute, Second}}) ->
+  list_to_binary(lists:flatten(io_lib:format("~4..0B-~2..0B-~2..0B ~2..0B:~2..0B:~2..0B",
+                            [Year, Month, Day, Hour, Minute, Second]))).
