@@ -142,7 +142,7 @@ handle_gnss_data(Payload, Imei, State) ->
     % io:format("LbsLng: ~p, LbsLat: ~p~n", [LbsLng, LbsLat]),
 
     emqdb_db:db_pg_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
-    emqdb_db:db_ora_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
+    % emqdb_db:db_ora_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
 
     {noreply, State}
   catch

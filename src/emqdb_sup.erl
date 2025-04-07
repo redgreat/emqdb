@@ -46,10 +46,10 @@ init([]) ->
   MqttHandlerSpec = {emqdb_handler, {emqdb_handler, start_link, []},
     permanent, 5000, worker, [emqdb_handler]},
 
-  OracleConnSpec = {oracle_conn, {emqdb_oraconn, start_link, []},
-    permanent, 5000, worker, [emqdb_oraconn]},
+  % OracleConnSpec = {oracle_conn, {emqdb_oraconn, start_link, []},
+  %   permanent, 5000, worker, [emqdb_oraconn]},
   
-  ChildSpecs = PoolSpec ++ [OracleConnSpec, MqttHandlerSpec],
+  ChildSpecs = PoolSpec ++ [MqttHandlerSpec],
   
   {ok, { {one_for_one, 10, 10}, ChildSpecs}}.
 
