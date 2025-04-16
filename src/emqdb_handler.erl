@@ -125,8 +125,8 @@ handle_gnss_data(Payload, Imei, State) ->
         {_, undefined} -> 
           lager:warning("Missing GPS latitude"),
           {undefined, undefined};
-        {LngBin, LatBin} -> 
-          {binary_to_float(LngBin), binary_to_float(LatBin)}
+        {Lng, Lat} -> 
+          {Lng, Lat}
       end,
 
     Spd = maps:get(<<"spd">>, Gps, 0),
@@ -159,9 +159,9 @@ handle_gnss_data(Payload, Imei, State) ->
 
     {noreply, State}
   catch
-    _:Error ->
+    _:Error:Stacktrace ->
       lager:error("Failed to parse message: ~p~nPayload: ~p~nStack trace: ~p", 
-                 [Error, Payload, erlang:get_stacktrace()]),
+                 [Error, Payload, Stacktrace]),
       {noreply, State}
   end.
 
