@@ -83,10 +83,13 @@ handle_cast(_Msg, State) ->
   {noreply, State}.
 
 handle_info({publish, #{payload := Payload, topic := Topic}}, State) ->
+  lager:info("Received MQTT message - Topic: ~p, Payload: ~p", [Topic, Payload]),
   case Topic of
     <<"pos/gnss/", Imei/binary>> ->
+      lager:info("Processing GNSS data for IMEI: ~p", [Imei]),
       handle_gnss_data(Payload, Imei, State);
     <<"pos/780eg/", Imei/binary>> ->
+      lager:info("Processing 780EG data for IMEI: ~p", [Imei]),
       handle_gnss_data(Payload, Imei, State);
     _ ->
       lager:warning("Received message on unknown topic: ~p", [Topic]),
@@ -98,19 +101,29 @@ handle_info(_Info, State) ->
 
 handle_gnss_data(Payload, Imei, State) ->
   try
+    lager:info("Raw payload: ~p", [Payload]),
     JsonData = json:decode(Payload),
+    lager:info("Decoded JSON data: ~p", [JsonData]),
+    
     TimeStamp = maps:get(<<"timestamp">>, JsonData),
     DateTime = calendar:system_time_to_universal_time(TimeStamp, second),
     Acc = maps:get(<<"acc">>, JsonData, 0),
     Csq = maps:get(<<"csq">>, JsonData, 0),
     Volt = maps:get(<<"volt">>, JsonData, 0),
 
+    lager:info("Basic info - IMEI: ~p, Time: ~p, Acc: ~p, Csq: ~p, Volt: ~p", 
+               [Imei, DateTime, Acc, Csq, Volt]),
+
     Gps = maps:get(<<"gps">>, JsonData, #{}),
+    lager:info("GPS data: ~p", [Gps]),
+    
     {GpsLng, GpsLat} = 
       case {maps:get(<<"lng">>, Gps, undefined), maps:get(<<"lat">>, Gps, undefined)} of
         {undefined, _} -> 
+          lager:warning("Missing GPS longitude"),
           {undefined, undefined};
         {_, undefined} -> 
+          lager:warning("Missing GPS latitude"),
           {undefined, undefined};
         {LngBin, LatBin} -> 
           {binary_to_float(LngBin), binary_to_float(LatBin)}
@@ -121,25 +134,25 @@ handle_gnss_data(Payload, Imei, State) ->
     Dir = maps:get(<<"dir">>, Gps, 0),
     Sats = maps:get(<<"sats">>, Gps, 0),
 
+    lager:info("GPS coordinates - Lng: ~p, Lat: ~p, Speed: ~p, Alt: ~p, Dir: ~p, Sats: ~p",
+               [GpsLng, GpsLat, Spd, Alt, Dir, Sats]),
+
     Lbs = maps:get(<<"lbs">>, JsonData, #{}),
+    lager:info("LBS data: ~p", [Lbs]),
+    
     {LbsLng, LbsLat} = 
       case {maps:get(<<"lng">>, Lbs, undefined), maps:get(<<"lat">>, Lbs, undefined)} of
         {undefined, _} -> 
+          lager:warning("Missing LBS longitude"),
           {undefined, undefined};
         {_, undefined} -> 
+          lager:warning("Missing LBS latitude"),
           {undefined, undefined};
         {Lng, Lat} -> 
           {binary_to_float(Lng), binary_to_float(Lat)}
       end,
 
-    % io:format("DateTime: ~p~n", [DateTime]),
-    % io:format("DateBinary: ~p~n", [DateBinary]),
-    % io:format("Acc: ~p~n", [Acc]),
-    % io:format("Csq: ~p~n", [Csq]),
-    % io:format("Volt: ~p~n", [Volt]),
-    % io:format("GpsLng: ~p, GpsLat: ~p~n", [GpsLng, GpsLat]),
-    % io:format("Spd: ~p, Alt: ~p, Dir: ~p, Sats: ~p~n", [Spd, Alt, Dir, Sats]),
-    % io:format("LbsLng: ~p, LbsLat: ~p~n", [LbsLng, LbsLat]),
+    lager:info("LBS coordinates - Lng: ~p, Lat: ~p", [LbsLng, LbsLat]),
 
     emqdb_db:db_pg_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
     % emqdb_db:db_ora_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
@@ -147,7 +160,8 @@ handle_gnss_data(Payload, Imei, State) ->
     {noreply, State}
   catch
     _:Error ->
-      lager:error("Failed to parse message: ~p~n", [Error]),
+      lager:error("Failed to parse message: ~p~nPayload: ~p~nStack trace: ~p", 
+                 [Error, Payload, erlang:get_stacktrace()]),
       {noreply, State}
   end.
 
