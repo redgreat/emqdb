@@ -116,23 +116,13 @@ handle_gnss_data(Payload, Imei, State) ->
 
     Gps = maps:get(<<"gps">>, JsonData, #{}),
     lager:info("GPS data: ~p", [Gps]),
-    
-    {GpsLng, GpsLat} = 
-      case {maps:get(<<"lng">>, Gps, undefined), maps:get(<<"lat">>, Gps, undefined)} of
-        {undefined, _} -> 
-          lager:warning("Missing GPS longitude"),
-          {undefined, undefined};
-        {_, undefined} -> 
-          lager:warning("Missing GPS latitude"),
-          {undefined, undefined};
-        {Lng, Lat} -> 
-          {Lng, Lat}
-      end,
 
     Spd = maps:get(<<"spd">>, Gps, 0),
     Alt = maps:get(<<"alt">>, Gps, 0),
     Dir = maps:get(<<"dir">>, Gps, 0),
     Sats = maps:get(<<"sats">>, Gps, 0),
+    GpsLng = maps:get(<<"lng">>, Gps, undefined),
+    GpsLat = maps:get(<<"lat">>, Gps, undefined),
 
     lager:info("GPS coordinates - Lng: ~p, Lat: ~p, Speed: ~p, Alt: ~p, Dir: ~p, Sats: ~p",
                [GpsLng, GpsLat, Spd, Alt, Dir, Sats]),
