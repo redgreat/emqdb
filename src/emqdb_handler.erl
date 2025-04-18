@@ -186,11 +186,11 @@ datetime_to_binary({{Year, Month, Day}, {Hour, Minute, Second}}) ->
                             [Year, Month, Day, Hour, Minute, Second]))).
 
 %% 安全转换函数，undefined或非法binary都返回null
-safe_binary_to_float(undefined) -> null;
-safe_binary_to_float(Bin) when is_binary(Bin) ->
-    try binary_to_float(Bin) of
-        F -> F
-    catch
-        _:_ -> null
+safe_binary_to_float(undefined) -> undefined;
+safe_binary_to_float(Val) when is_float(Val) -> Val;
+safe_binary_to_float(Val) when is_binary(Val) ->
+    case catch binary_to_float(Val) of
+        F when is_float(F) -> F;
+        _ -> undefined
     end;
-safe_binary_to_float(_) -> null.
+safe_binary_to_float(_) -> undefined.

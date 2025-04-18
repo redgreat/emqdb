@@ -2,17 +2,5 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/_build/default/lib/emqtt" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/_build/default/lib/epgsql" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/_build/default/lib/jamdb_oracle" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/_build/default/lib/lager" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/_build/default/lib/poolboy" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/_build/default/lib/ranch" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/_build/prod/lib/emqtt" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/_build/prod/lib/epgsql" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/_build/prod/lib/jamdb_oracle" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/_build/prod/lib/lager" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/_build/prod/lib/poolboy" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/_build/prod/lib/ranch" vcs="Git" />
   </component>
 </project>
