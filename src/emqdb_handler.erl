@@ -83,13 +83,10 @@ handle_cast(_Msg, State) ->
   {noreply, State}.
 
 handle_info({publish, #{payload := Payload, topic := Topic}}, State) ->
-  lager:info("Received MQTT message - Topic: ~p, Payload: ~p", [Topic, Payload]),
   case Topic of
     <<"pos/gnss/", Imei/binary>> ->
-      lager:info("Processing GNSS data for IMEI: ~p", [Imei]),
       handle_gnss_data(Payload, Imei, State);
     <<"pos/780eg/", Imei/binary>> ->
-      lager:info("Processing 780EG data for IMEI: ~p", [Imei]),
       handle_gnss_data(Payload, Imei, State);
     _ ->
       lager:warning("Received message on unknown topic: ~p", [Topic]),
