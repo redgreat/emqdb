@@ -101,48 +101,24 @@ handle_info(_Info, State) ->
 
 handle_gnss_data(Payload, Imei, State) ->
   try
-    lager:info("Raw payload: ~p", [Payload]),
     JsonData = json:decode(Payload),
-    lager:info("Decoded JSON data: ~p", [JsonData]),
-    
     TimeStamp = maps:get(<<"timestamp">>, JsonData),
     DateTime = calendar:system_time_to_universal_time(TimeStamp, second),
     Acc = maps:get(<<"acc">>, JsonData, 0),
     Csq = maps:get(<<"csq">>, JsonData, 0),
     Volt = maps:get(<<"volt">>, JsonData, 0),
 
-    lager:info("Basic info - IMEI: ~p, Time: ~p, Acc: ~p, Csq: ~p, Volt: ~p", 
-               [Imei, DateTime, Acc, Csq, Volt]),
-
     Gps = maps:get(<<"gps">>, JsonData, #{}),
-    lager:info("GPS data: ~p", [Gps]),
-
     Spd = maps:get(<<"spd">>, Gps, 0),
     Alt = maps:get(<<"alt">>, Gps, 0),
     Dir = maps:get(<<"dir">>, Gps, 0),
     Sats = maps:get(<<"sats">>, Gps, 0),
-    GpsLng = maps:get(<<"lng">>, Gps, undefined),
-    GpsLat = maps:get(<<"lat">>, Gps, undefined),
-
-    lager:info("GPS coordinates - Lng: ~p, Lat: ~p, Speed: ~p, Alt: ~p, Dir: ~p, Sats: ~p",
-               [GpsLng, GpsLat, Spd, Alt, Dir, Sats]),
+    GpsLng = safe_binary_to_float(maps:get(<<"lng">>, Gps, undefined)),
+    GpsLat = safe_binary_to_float(maps:get(<<"lat">>, Gps, undefined)),
 
     Lbs = maps:get(<<"lbs">>, JsonData, #{}),
-    lager:info("LBS data: ~p", [Lbs]),
-    
-    {LbsLng, LbsLat} = 
-      case {maps:get(<<"lng">>, Lbs, undefined), maps:get(<<"lat">>, Lbs, undefined)} of
-        {undefined, _} -> 
-          lager:warning("Missing LBS longitude"),
-          {undefined, undefined};
-        {_, undefined} -> 
-          lager:warning("Missing LBS latitude"),
-          {undefined, undefined};
-        {Lng, Lat} -> 
-          {binary_to_float(Lng), binary_to_float(Lat)}
-      end,
-
-    lager:info("LBS coordinates - Lng: ~p, Lat: ~p", [LbsLng, LbsLat]),
+    LbsLng = safe_binary_to_float(maps:get(<<"lng">>, Lbs, undefined)),
+    LbsLat = safe_binary_to_float(maps:get(<<"lat">>, Lbs, undefined)),
 
     emqdb_db:db_pg_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
     % emqdb_db:db_ora_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
@@ -211,3 +187,13 @@ timestamp_to_binary(Timestamp) when is_integer(Timestamp) ->
 datetime_to_binary({{Year, Month, Day}, {Hour, Minute, Second}}) ->
   list_to_binary(lists:flatten(io_lib:format("~4..0B-~2..0B-~2..0B ~2..0B:~2..0B:~2..0B",
                             [Year, Month, Day, Hour, Minute, Second]))).
+
+%% 安全转换函数，undefined或非法binary都返回null
+safe_binary_to_float(undefined) -> null;
+safe_binary_to_float(Bin) when is_binary(Bin) ->
+    try binary_to_float(Bin) of
+        F -> F
+    catch
+        _:_ -> null
+    end;
+safe_binary_to_float(_) -> null.
