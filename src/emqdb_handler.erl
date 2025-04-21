@@ -117,7 +117,19 @@ handle_gnss_data(Payload, Imei, State) ->
     LbsLng = safe_binary_to_float(maps:get(<<"lng">>, Lbs, null)),
     LbsLat = safe_binary_to_float(maps:get(<<"lat">>, Lbs, null)),
 
-    emqdb_db:db_pg_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
+    case (
+    GpsLat =/= undefined andalso GpsLat =/= null andalso GpsLat =/= "" andalso
+    GpsLng =/= undefined andalso GpsLng =/= null andalso GpsLng =/= "" andalso
+    LbsLat =/= undefined andalso LbsLat =/= null andalso LbsLat =/= "" andalso
+    LbsLng =/= undefined andalso LbsLng =/= null andalso LbsLng =/= ""
+    
+    ) of true ->
+        emqdb_db:db_pg_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats);
+    false ->
+        ok
+    end,
+        
+    % emqdb_db:db_pg_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
     % emqdb_db:db_ora_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
 
     {noreply, State}
