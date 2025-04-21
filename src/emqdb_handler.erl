@@ -110,12 +110,12 @@ handle_gnss_data(Payload, Imei, State) ->
     Alt = maps:get(<<"alt">>, Gps, 0),
     Dir = maps:get(<<"dir">>, Gps, 0),
     Sats = maps:get(<<"sats">>, Gps, 0),
-    GpsLng = safe_binary_to_float(maps:get(<<"lng">>, Gps, undefined)),
-    GpsLat = safe_binary_to_float(maps:get(<<"lat">>, Gps, undefined)),
+    GpsLng = safe_binary_to_float(maps:get(<<"lng">>, Gps, null)),
+    GpsLat = safe_binary_to_float(maps:get(<<"lat">>, Gps, null)),
 
     Lbs = maps:get(<<"lbs">>, JsonData, #{}),
-    LbsLng = safe_binary_to_float(maps:get(<<"lng">>, Lbs, undefined)),
-    LbsLat = safe_binary_to_float(maps:get(<<"lat">>, Lbs, undefined)),
+    LbsLng = safe_binary_to_float(maps:get(<<"lng">>, Lbs, null)),
+    LbsLat = safe_binary_to_float(maps:get(<<"lat">>, Lbs, null)),
 
     emqdb_db:db_pg_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
     % emqdb_db:db_ora_yed(DateTime, Imei, Acc, Csq, Volt, GpsLat, GpsLng, LbsLat, LbsLng, Alt, Dir, Spd, Sats),
@@ -185,12 +185,14 @@ datetime_to_binary({{Year, Month, Day}, {Hour, Minute, Second}}) ->
   list_to_binary(lists:flatten(io_lib:format("~4..0B-~2..0B-~2..0B ~2..0B:~2..0B:~2..0B",
                             [Year, Month, Day, Hour, Minute, Second]))).
 
+%% @doc
 %% 安全转换函数，undefined或非法binary都返回null
-safe_binary_to_float(undefined) -> undefined;
+%% @end
+safe_binary_to_float(undefined) -> null;
 safe_binary_to_float(Val) when is_float(Val) -> Val;
 safe_binary_to_float(Val) when is_binary(Val) ->
-    case catch binary_to_float(Val) of
-        F when is_float(F) -> F;
-        _ -> undefined
-    end;
-safe_binary_to_float(_) -> undefined.
+  case catch binary_to_float(Val) of
+    F when is_float(F) -> F;
+    _ -> null
+  end;
+safe_binary_to_float(_) -> null.

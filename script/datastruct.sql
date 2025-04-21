@@ -51,9 +51,9 @@ create table lc_yedgnss (
   gpslng decimal(10, 7),
   lbslat decimal(10, 7),
   lbslng decimal(10, 7),
-  height integer,
-  direction integer,
-  speed integer,
+  height decimal(5, 2),
+  direction decimal(5, 2),
+  speed decimal(5, 2),
   satellite integer,
   inserttime timestamptz not null default current_timestamp
 );
